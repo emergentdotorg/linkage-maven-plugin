@@ -1,0 +1,39 @@
+name: Perform Maven Release
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'pom.xml'
+      - '**/src/**'
+      - '**/pom.xml'
+  workflow_dispatch:
+    inputs:
+      deploy-server:
+        description: 'Distribution server-id'
+        type: choice
+        default: emergent-nexus
+        options:
+          - central
+          - emergent-nexus
+
+jobs:
+  maven-release:
+    name: Maven Release
+    uses: emergentdotorg/github-actions/.github/workflows/maven-release.yaml@v4
+    secrets: inherit
+    with:
+      java-version: 17
+      deploy-server: ${{ inputs.deploy-server || 'emergent-nexus' }}
+
+  process-results:
+    name: Process Results
+    runs-on: ubuntu-latest
+    needs: maven-release
+    steps:
+      - run: echo version=${{ needs.maven-release.outputs.version }}
